@@ -88,7 +88,6 @@ Runner.prototype.runFiles = function (files, dir, cb) {
           cmd = args.shift()
           args.push(fileName)
         }
-        console.log([cmd].concat(args))
         var cp = child_process.spawn(cmd, args, { env: env, cwd: relDir })
           , out = ""
           , err = ""
