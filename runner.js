@@ -78,13 +78,13 @@ Runner.prototype.runFiles = function (files, dir, cb) {
       for (var i in process.env) env[i] = process.env[i]
       env.TAP = 1
       
-      fs.readFile(f, 'utf8', function(er, file_source) {
+      fs.readFile(f, 'utf8', function(er, fileSource) {
         if (er) {
           self.write(assert.fail("could not read "+f, {error: er}))
           return cb()
         }
-        if (file_source.slice(0, 2) === '#!') {
-          args = file_source.split('\n')[0].slice(2).trim().split(' ')
+        if (fileSource.slice(0, 2) === '#!') {
+          args = fileSource.split('\n')[0].slice(2).trim().split(' ')
           cmd = args.shift()
           args.push(fileName)
         }
