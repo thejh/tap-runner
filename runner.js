@@ -77,39 +77,51 @@ Runner.prototype.runFiles = function (files, dir, cb) {
       var env = {}
       for (var i in process.env) env[i] = process.env[i]
       env.TAP = 1
-
-      var cp = child_process.spawn(cmd, args, { env: env, cwd: relDir })
-        , out = ""
-        , err = ""
-        , tc = new TapConsumer
-        , childTests = [f]
-
-      tc.on("data", function (c) {
-        self.emit("result", c)
-        self.write(c)
-      })
-
-      cp.stdout.pipe(tc)
-      cp.stdout.on("data", function (c) { out += c })
-      cp.stderr.on("data", function (c) { err += c })
-
-      cp.on("exit", function (code) {
-        //childTests.forEach(function (c) { self.write(c) })
-        var res = { name: fileName
-                  , ok: !code }
-        if (err) {
-          res.stderr = err
-          if (tc.results.ok && tc.results.tests === 0) {
-            // perhaps a compilation error or something else failed...
-            console.error(err)
-          }
+      
+      fs.readFile(f, 'utf8', function(er, file_source) {
+        if (er) {
+          self.write(assert.fail("could not read "+f, {error: er}))
+          return cb()
         }
-        res.command = [cmd].concat(args).map(JSON.stringify).join(" ")
-        self.emit("result", res)
-        self.emit("file", f, res, tc.results)
-        self.write(res)
-        self.write("\n")
-        cb()
+        if (file_source.slice(0, 2) === '#!') {
+          args = file_source.split('\n')[0].slice(2).trim().split(' ')
+          cmd = args.shift()
+          args.push(fileName)
+        }
+        console.log([cmd].concat(args))
+        var cp = child_process.spawn(cmd, args, { env: env, cwd: relDir })
+          , out = ""
+          , err = ""
+          , tc = new TapConsumer
+          , childTests = [f]
+
+        tc.on("data", function (c) {
+          self.emit("result", c)
+          self.write(c)
+        })
+
+        cp.stdout.pipe(tc)
+        cp.stdout.on("data", function (c) { out += c })
+        cp.stderr.on("data", function (c) { err += c })
+
+        cp.on("exit", function (code) {
+          //childTests.forEach(function (c) { self.write(c) })
+          var res = { name: fileName
+                    , ok: !code }
+          if (err) {
+            res.stderr = err
+            if (tc.results.ok && tc.results.tests === 0) {
+              // perhaps a compilation error or something else failed...
+              console.error(err)
+            }
+          }
+          res.command = [cmd].concat(args).map(JSON.stringify).join(" ")
+          self.emit("result", res)
+          self.emit("file", f, res, tc.results)
+          self.write(res)
+          self.write("\n")
+          cb()
+        })
       })
     })
   }}), cb)
